@@ -11,11 +11,11 @@ export interface MediaInfo {
 
 const cache = new Map<string, MediaInfo>();
 
-export function useMediaInfo(item: Item) {
-  const [info, setInfo] = useState<MediaInfo | undefined>(cache.get(item.id));
+export function useMediaInfo(item: Item | null) { // <-- Item | null qilindi
+  const [info, setInfo] = useState<MediaInfo | undefined>(item ? cache.get(item.id) : undefined);
 
   useEffect(() => {
-    if (info) return;
+    if (!item || info) return;
     let cancelled = false;
     
     const params = new URLSearchParams({
