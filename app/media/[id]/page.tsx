@@ -6,11 +6,12 @@ import { motion } from 'framer-motion';
 import { ITEMS } from '@/lib/data';
 import { useProgress } from '@/lib/useProgress';
 import { getItemStats, cn } from '@/lib/utils';
-import type { Status } from '@/lib/types';
 
 export default function MediaDetails() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id as string; // <-- string ga aylantirildi
   const router = useRouter();
+  
   const item = ITEMS.find(i => i.id === id);
   
   const { progress, loaded, setMovieStatus, setEpisodeStatus, markAllWatched, clearItem } = useProgress();
@@ -18,8 +19,8 @@ export default function MediaDetails() {
 
   useEffect(() => {
     if (!item) return;
-    const params = new URLSearchParams({ id: String(item.tmdbId), type: item.tmdbType, title: item.title });
-    fetch(`/api/details?${params.toString()}`).then(r => r.json()).then(setDetails);
+    const query = new URLSearchParams({ id: String(item.tmdbId), type: item.tmdbType, title: item.title });
+    fetch(`/api/details?${query.toString()}`).then(r => r.json()).then(setDetails);
   }, [item]);
 
   if (!loaded || !item) return null;
