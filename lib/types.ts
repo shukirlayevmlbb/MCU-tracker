@@ -13,6 +13,7 @@ export interface BaseItem {
   phase: string;
   tmdbType: 'movie' | 'tv';
   year: number;
+  tmdbId: number;
 }
 
 export interface MovieItem extends BaseItem {
