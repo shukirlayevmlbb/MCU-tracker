@@ -6,18 +6,15 @@ import { NextUpCard } from '@/components/NextUpCard';
 import { FilterBar, FilterType } from '@/components/FilterBar';
 import { MediaCard } from '@/components/MediaCard';
 import { BottomNav } from '@/components/BottomNav';
-import { BottomSheet } from '@/components/BottomSheet';
 import { ITEMS } from '@/lib/data';
 import { useProgress } from '@/lib/useProgress';
 import { getItemStats } from '@/lib/utils';
-import type { Item } from '@/lib/types';
 
 export default function Home() {
-  const { progress, loaded, setMovieStatus, setEpisodeStatus, markAllWatched, clearItem, resetAll } = useProgress();
+  const { progress, loaded, setMovieStatus, resetAll } = useProgress();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
   const [activeTab, setActiveTab] = useState('list');
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const filtered = useMemo(() => {
@@ -39,13 +36,13 @@ export default function Home() {
   const scrollTo = (id: string) => cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const handleReset = () => { if (confirm('Barcha progressni tozalashni xohlaysizmi?')) resetAll(); };
 
-  if (!loaded) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-marvel-red border-t-transparent animate-spin" /></div>;
+  if (!loaded) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" /></div>;
 
   return (
     <div className="min-h-screen pb-28">
       <Header />
       
-      <main className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
+      <main className="max-w-2xl mx-auto px-4 pt-4 space-y-5">
         {activeTab === 'list' && (
           <>
             <ProgressOverview items={ITEMS} progress={progress} />
@@ -57,7 +54,6 @@ export default function Home() {
                 <div key={item.id} ref={el => { cardRefs.current[item.id] = el; }}>
                   <MediaCard 
                     item={item} progress={progress[item.id]} 
-                    onClick={() => setSelectedItem(item)}
                     onMovieStatus={s => setMovieStatus(item.id, s)} 
                     priority={idx < 3} 
                   />
@@ -68,31 +64,20 @@ export default function Home() {
         )}
 
         {activeTab === 'stats' && (
-          <div className="glass rounded-3xl p-6 text-center mt-10">
+          <div className="glass rounded-[24px] p-6 text-center mt-10">
             <h2 className="text-lg font-bold">Statistika tez orada...</h2>
-            <p className="text-sm text-zinc-400 mt-2">Bu yerda batafsil grafiklar va ma'lumotlar bo'ladi.</p>
           </div>
         )}
 
         {activeTab === 'settings' && (
-          <div className="glass rounded-3xl p-6 text-center mt-10">
+          <div className="glass rounded-[24px] p-6 text-center mt-10">
             <h2 className="text-lg font-bold">Sozlamalar</h2>
-            <p className="text-sm text-zinc-400 mt-2">Tez orada qo'shiladi.</p>
-            <button onClick={handleReset} className="mt-6 px-6 py-3 bg-red-500/10 text-red-500 rounded-xl font-semibold text-sm">Progresni tozalash</button>
+            <button onClick={handleReset} className="mt-6 px-6 py-3 glass-btn text-red-500 rounded-xl font-semibold text-sm">Progresni tozalash</button>
           </div>
         )}
       </main>
 
       <BottomNav activeTab={activeTab} setTab={setActiveTab} />
-
-      <BottomSheet 
-        item={selectedItem} progress={selectedItem ? progress[selectedItem.id] : undefined}
-        onClose={() => setSelectedItem(null)}
-        onMovieStatus={s => selectedItem && setMovieStatus(selectedItem.id, s)}
-        onEpisodeStatus={(n, s) => selectedItem && setEpisodeStatus(selectedItem.id, n, s)}
-        onMarkAll={() => selectedItem?.type === 'series' && markAllWatched(selectedItem.id, selectedItem.episodes.length)}
-        onClear={() => selectedItem && clearItem(selectedItem.id)}
-      />
     </div>
   );
 }
