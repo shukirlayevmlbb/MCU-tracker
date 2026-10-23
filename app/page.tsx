@@ -5,16 +5,19 @@ import { ProgressOverview } from '@/components/ProgressOverview';
 import { NextUpCard } from '@/components/NextUpCard';
 import { FilterBar, FilterType } from '@/components/FilterBar';
 import { MediaCard } from '@/components/MediaCard';
+import { BottomNav } from '@/components/BottomNav';
+import { BottomSheet } from '@/components/BottomSheet';
 import { ITEMS } from '@/lib/data';
 import { useProgress } from '@/lib/useProgress';
 import { getItemStats } from '@/lib/utils';
+import type { Item } from '@/lib/types';
 
 export default function Home() {
-  const {
-    progress, loaded, setMovieStatus, setEpisodeStatus, markAllWatched, clearItem, resetAll,
-  } = useProgress();
+  const { progress, loaded, setMovieStatus, setEpisodeStatus, markAllWatched, clearItem, resetAll } = useProgress();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [activeTab, setActiveTab] = useState('list');
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const filtered = useMemo(() => {
@@ -33,60 +36,63 @@ export default function Home() {
     });
   }, [search, filter, progress]);
 
-  const scrollTo = (id: string) => {
-    cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
+  const scrollTo = (id: string) => cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleReset = () => { if (confirm('Barcha progressni tozalashni xohlaysizmi?')) resetAll(); };
 
-  const handleReset = () => {
-    if (confirm('Barcha progressni tozalashni xohlaysizmi?')) resetAll();
-  };
-
-  if (!loaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-marvel-red border-t-transparent animate-spin" />
-      </div>
-    );
-  }
+  if (!loaded) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-marvel-red border-t-transparent animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen pb-safe">
+    <div className="min-h-screen pb-28">
       <Header />
-      <main className="max-w-3xl mx-auto px-3 pt-3 space-y-3">
-        <ProgressOverview items={ITEMS} progress={progress} />
-        <NextUpCard items={ITEMS} progress={progress} onScrollTo={scrollTo} />
-        <FilterBar
-          search={search}
-          onSearchChange={setSearch}
-          filter={filter}
-          onFilterChange={setFilter}
-          onReset={handleReset}
-        />
-
-        <div className="space-y-2.5 pt-1">
-          {filtered.map((item, idx) => (
-            <div key={item.id} ref={el => { cardRefs.current[item.id] = el; }}>
-              <MediaCard
-                item={item}
-                progress={progress[item.id]}
-                onMovieStatus={s => setMovieStatus(item.id, s)}
-                onEpisodeStatus={(n, s) => setEpisodeStatus(item.id, n, s)}
-                onMarkAll={() => item.type === 'series' && markAllWatched(item.id, item.episodes.length)}
-                onClear={() => clearItem(item.id)}
-                priority={idx < 3}
-              />
+      
+      <main className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
+        {activeTab === 'list' && (
+          <>
+            <ProgressOverview items={ITEMS} progress={progress} />
+            <NextUpCard items={ITEMS} progress={progress} onScrollTo={scrollTo} />
+            <FilterBar search={search} onSearchChange={setSearch} filter={filter} onFilterChange={setFilter} onReset={handleReset} />
+            
+            <div className="space-y-3 pt-2">
+              {filtered.map((item, idx) => (
+                <div key={item.id} ref={el => { cardRefs.current[item.id] = el; }}>
+                  <MediaCard 
+                    item={item} progress={progress[item.id]} 
+                    onClick={() => setSelectedItem(item)}
+                    onMovieStatus={s => setMovieStatus(item.id, s)} 
+                    priority={idx < 3} 
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-zinc-500 text-sm">Hech narsa topilmadi</div>
-          )}
-        </div>
+          </>
+        )}
 
-        <footer className="text-center text-xs text-zinc-500 py-6">
-          <div>Marvel Xronologiya Tracker</div>
-          <div className="mt-1 opacity-70">MCU ni xronologik tartibda kuzatib boring</div>
-        </footer>
+        {activeTab === 'stats' && (
+          <div className="glass rounded-3xl p-6 text-center mt-10">
+            <h2 className="text-lg font-bold">Statistika tez orada...</h2>
+            <p className="text-sm text-zinc-400 mt-2">Bu yerda batafsil grafiklar va ma'lumotlar bo'ladi.</p>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="glass rounded-3xl p-6 text-center mt-10">
+            <h2 className="text-lg font-bold">Sozlamalar</h2>
+            <p className="text-sm text-zinc-400 mt-2">Tez orada qo'shiladi.</p>
+            <button onClick={handleReset} className="mt-6 px-6 py-3 bg-red-500/10 text-red-500 rounded-xl font-semibold text-sm">Progresni tozalash</button>
+          </div>
+        )}
       </main>
+
+      <BottomNav activeTab={activeTab} setTab={setActiveTab} />
+
+      <BottomSheet 
+        item={selectedItem} progress={selectedItem ? progress[selectedItem.id] : undefined}
+        onClose={() => setSelectedItem(null)}
+        onMovieStatus={s => selectedItem && setMovieStatus(selectedItem.id, s)}
+        onEpisodeStatus={(n, s) => selectedItem && setEpisodeStatus(selectedItem.id, n, s)}
+        onMarkAll={() => selectedItem?.type === 'series' && markAllWatched(selectedItem.id, selectedItem.episodes.length)}
+        onClear={() => selectedItem && clearItem(selectedItem.id)}
+      />
     </div>
   );
 }
